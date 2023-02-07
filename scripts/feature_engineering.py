@@ -2,6 +2,7 @@ import pandas as pd
 from typing import List
 
 
+# TODO: add flexibility for granularity
 def add_holidays(data: pd.DataFrame, holidays: pd.DataFrame, date_col: List) -> pd.DataFrame:
     """
     Adds holidays Column to the dataframe
