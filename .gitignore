@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+/Data/Master Data/sample_data.csv
 develop-eggs/
 dist/
 downloads/

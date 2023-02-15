@@ -20,3 +20,7 @@ def remove_columns_with_all_zeros(df: pd.DataFrame) -> pd.DataFrame:
         return df
     except:
         print(traceback.print_exc())
+
+
+
+
