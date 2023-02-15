@@ -16,7 +16,8 @@ def remove_columns_with_all_zeros(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     try:
-        df = df.loc[(df != 0).any(axis=1)]
+        all_zero_col_filter = (df == 0).all(axis=0)
+        df = df.loc[:, ~all_zero_col_filter]
         return df
     except:
         print(traceback.print_exc())
