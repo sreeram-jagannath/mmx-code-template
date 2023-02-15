@@ -1,9 +1,71 @@
+import logging
+import traceback
 from typing import List
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.tsatools import add_trend
+
+logging.basicConfig(level=logging.INFO)
+
+
+def log_transformation(columns_to_transform: List, data: pd.DataFrame) -> pd.DataFrame:
+    """Get the list of columns from the user to transform and replace those
+    columns with log(x + 1)
+
+    Args:
+        columns_to_transform (List): list of the columns to apply log(1 + x) transformation
+        data (pd.DataFrame): input dataframe
+
+    Returns:
+        pd.DataFrame: transformed data which has log values in the columns.
+    """
+
+    for col in columns_to_transform:
+        try:
+            data[col] = np.log1p(data[col])
+
+        except KeyError as e:
+            logging.error(f"Column {e} not present in the data.")
+
+        except Exception as e:
+            logging.error(traceback.print_exc())
+            continue
+
+    return data
+
+
+
+
+def scale_columns(df: pd.DataFrame, columns: list, strategy: str) -> pd.DataFrame:
+    """
+    Scales the specified columns in a Pandas dataframe using the specified strategy.
+
+    Parameters:
+    df (pd.DataFrame): The input dataframe.
+    columns (list): The list of column names to be scaled.
+    strategy (str): The scaling strategy to be used. Available options are 'custom', 'MinMaxScaler', and 'StandardScaler'.
+
+    Returns:
+    pd.DataFrame: The input dataframe with the specified columns scaled according to the specified strategy.
+    """
+    if strategy == 'custom':
+        for col in columns:
+            df[col] = df[col] / df[col].max()
+
+    elif strategy == 'MinMaxScaler':
+        scaler = MinMaxScaler()
+        df[columns] = scaler.fit_transform(df[columns])
+        
+    elif strategy == 'StandardScaler':
+        scaler = StandardScaler()
+        df[columns] = scaler.fit_transform(df[columns])
+    else:
+        raise ValueError("Invalid scaling strategy. Available options are 'custom', 'MinMaxScaler', and 'StandardScaler'.")
+
+    return df
 
 
 def add_holidays(data: pd.DataFrame, holidays: pd.DataFrame, date_col: List, granularity: str) -> pd.DataFrame:
