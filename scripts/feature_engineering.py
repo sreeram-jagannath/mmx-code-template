@@ -36,6 +36,28 @@ def log_transformation(columns_to_transform: List, data: pd.DataFrame) -> pd.Dat
 
     return data
 
+def inverse_transform(df : pd.DataFrame , columns_to_transform : List) -> pd.DataFrame :
+    """Take reciprocal of columns to capture inverse relation with the dv .
+
+    Args:
+        df (pd.DataFrame): input dataframe
+        columns_to_transform (List): list of the columns to apply inverese transformation
+
+    Returns:
+        pd.DataFrame: transformed data which has inverse values in the columns.
+    """
+    for col in columns_to_transform:
+        try:
+            df[col] = -1 * df[col]
+
+        except KeyError as e:
+            logging.error(f"Column {e} not present in the data.")
+
+        except Exception as e:
+            logging.error(traceback.print_exc())
+            continue
+
+    return df
 
 
 
