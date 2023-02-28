@@ -5,15 +5,16 @@ import bambi as bmb
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
-from sklearn.linear_model import Lasso
+from sklearn.linear_model import Lasso, Ridge
 
 
-def train_lasso_model(
+def train_linear_models(
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
     y_train: pd.Series,
-    y_test: pd.Series,
+    model_type: str = "lasso",
     model_args: dict = {},
+
 ) -> tuple[pd.DataFrame, pd.Series, pd.Series, BaseEstimator]:
     """
     Fits a lasso model on the train data and returns a pandas dataframe with feature names and
@@ -23,7 +24,8 @@ def train_lasso_model(
         X_train: A pandas DataFrame containing the feature values for the training data.
         X_test: A pandas DataFrame containing the feature values for the test data.
         y_train: A pandas Series containing the target values for the training data.
-        y_test: A pandas Series containing the target values for the test data.
+        model_type: string value having "lasso" or "ridge"
+        model_args: model arguments to linear model (refer sklearn documentation for possible argume)
 
     Returns:
         A tuple containing the following:
@@ -33,7 +35,17 @@ def train_lasso_model(
         - A pandas Series with the test predictions.
     """
     # Fit a linear regression model on the training data
-    model = Lasso(*model_args)
+
+    # constrain the coefficients to be +ve
+    model_args["positive"] = True
+
+    if model_type == "lasso":
+        model = Lasso(**model_args)
+    elif model_type == "ridge":
+        model = Ridge(**model_args)
+    else:
+        raise ValueError("Please enter either 'ridge' or 'lasso' as the model_type")
+
     model.fit(X_train, y_train)
 
     # Get the feature names and coefficients from the model
@@ -95,7 +107,7 @@ def train_bayesian(
     X_test = X_test.copy()
     X_test['target'] = y_test
     
-    # Define the model using Bambi
+    # Define the model using Bambi ( 1 | random_effect )
     model_equation = 'target ~ ' + ' + '.join(X_train.columns[:-1])
     model = bmb.Model(model_equation, data=X_train)
     if priors_config is not None:
