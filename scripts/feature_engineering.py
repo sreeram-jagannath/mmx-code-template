@@ -436,10 +436,10 @@ def create_adstock(data: pd.DataFrame, date_col: str, half_lives: List, max_memo
         date_col (str): name of the column in the data containing the dates 
         half_lives (List): list of different half-lives
         max_memory (int , optional): decay effect will stop after max_memory values. if zero decay will not stop . Defaults to 0.
-        group_cols (List, optional): list of column names by which data has to be grouped. Defaults to [].
+        group_cols (List, optional): list of column names by which data has to be grouped. Defaults to None.
         suffix (str, optional): character string (generally unit of half-lives) to be appended at the end of Adstock column names. Defaults to "".
         value_cols (List, optional): list of columns names for which Adstock has to be created . 
-                                     By default, it takes the list of all columns excluding group_cols and date_col. Defaults to [].
+                                     By default, it takes the list of all columns excluding group_cols and date_col. Defaults to None.
 
     Returns:
         pd.DataFrame: Adstocked Columns 
@@ -495,10 +495,10 @@ def create_lag(data: pd.DataFrame, date_col: str, lags: List,  group_cols: List 
         data (pd.DataFrame): Input Dataframe
         date_col (str): name of the column in the data containing the dates 
         lags (List): list of different lags
-        group_cols (List, optional): list of column names by which data has to be grouped. Defaults to [].
+        group_cols (List, optional): list of column names by which data has to be grouped. Defaults to None.
         suffix (str, optional): character string (generally unit of half-lives) to be appended at the end of Adstock column names. Defaults to "".
         value_cols (List, optional): list of columns names for which Adstock has to be created . 
-                                     By default, it takes the list of all columns excluding group_cols and date_col. Defaults to [].
+                                     By default, it takes the list of all columns excluding group_cols and date_col. Defaults to None.
 
     Returns:
         pd.DataFrame: Adstocked Columns 
