@@ -62,6 +62,92 @@ def train_linear_models(
     return model, feature_df, train_preds, test_preds
 
 
+def process_input_priors(pr_cfg_df: pd.DataFrame, data: pd.DataFrame) -> dict:
+    """function to map user input priors in excel file to bambi prior format
+
+    Args:
+        pr_cfg_df (pd.DataFrame): user input prior config in excel read as a pandas dataframe
+        data (pd.DataFrame): training data (to check if the idv entered by the user are present in the data)
+    Returns:
+        processed_priors (dict): dictionary containing proper prior format as required by bambi
+        
+    """
+    priors_mapping = {
+        "normal": "Normal",
+        "halfnormal": "HalfNormal",
+    }
+
+    processed_priors = {}
+    
+    for _, row in pr_cfg_df.iterrows():
+        idv = row["idv"]
+
+        # check if idv in prior config file is present in data
+        if idv not in data.columns.tolist():
+            raise ValueError(f"{idv} is not present in the data, Please the check the column names in the prior config excel file")
+
+        # if we have a prior input from the user
+        if not pd.isnull(row["prior_est"]):
+            print(row["prior_est"])
+            input_prior_est = row["prior_est"].lower()
+
+            # check if prior distribution is there in the mapping dictionary
+            if input_prior_est not in priors_mapping:
+                raise ValueError(f"Please use priors from this list, {priors_mapping.keys()}. To use other priors, directly use priors in the format that bambi requires")
+
+            match input_prior_est:
+                case "normal":
+                    try:
+                        mu = row["mu"]
+                        sigma = row["sigma"]
+                        processed_priors[row["idv"]] = bmb.Prior("Normal", mu=mu, sigma=sigma)
+                    except:
+                        raise Exception(f"Please enter valid mu and sigma for {input_prior_est}")
+                case "halfnormal":
+                    try:
+                        sigma = row["sigma"]
+                        processed_priors[row["idv"]] = bmb.Prior("HalfNormal", sigma=sigma)
+                    except:
+                        raise Exception(f"Please enter valid sigma for {input_prior_est}")
+
+    return processed_priors
+
+
+def create_model_equation(pr_cfg_df, group_var="", random_intercept=True) -> str:
+    """function to create mixed model equation from the user
+
+    Args:
+        pr_cfg_df (pd.DataFrame): Pandas dataframe with user results
+        group_var (str, optional): group variable for random effects. Defaults to "".
+        random_intercept (bool, optional): do we want intercept for random effects. Defaults to False.
+
+    Returns:
+        model_equation (str): returns the mixed model equation.
+    """
+    
+    dv = pr_cfg_df["dv"].unique()[0]
+    
+    fixed_effects = pr_cfg_df.query("is_fixed == 1")["idv"].values.tolist()
+    fixed_equation = "+".join(fixed_effects)
+         
+    random_idvs = pr_cfg_df.query("is_random == 1")["idv"].values.tolist()
+    
+    if random_intercept:
+        random_effects = [f"(1 + {var} | {group_var})" for var in random_idvs]
+    else:
+        random_effects = [f"(-1 + {var} | {group_var})" for var in random_idvs]
+        
+    ranef_equation = "+".join(random_effects)
+    
+    if len(random_effects) > 0:
+        rhs_eq = fixed_equation + "+ " + ranef_equation
+    else:
+        rhs_eq = fixed_equation
+
+    model_equation = dv + " ~ " + rhs_eq
+    return model_equation
+
+
 def _get_bambi_predictions(pred_object):
     final_preds = (
         az.summary(pred_object).reset_index().query("index.str.contains('_mean')")["mean"].values
@@ -74,7 +160,8 @@ def train_bayesian(
     X_train: pd.DataFrame, 
     X_test: pd.DataFrame, 
     y_train: pd.Series, 
-    y_test: pd.Series, 
+    y_test: pd.Series,
+    model_equation: str = "",
     priors_config: dict = None,
     model_args: dict = None,
 ) -> tuple[pd.DataFrame, pd.Series, pd.Series, bmb.Model]:
@@ -96,23 +183,18 @@ def train_bayesian(
         - A pandas Series with the test predictions.
         - The trained Bayesian linear regression model object.
     """
-    # Remove all punctuation and spaces from the column names
-    translator = str.maketrans('', '', string.punctuation + ' ')
-    X_train.columns = [col.translate(translator) for col in X_train.columns]
-    X_test.columns = [col.translate(translator) for col in X_test.columns]
+    dv_name = model_equation.split('~')[0].strip()
 
     # Add the target variable to the X_train and X_test dataframes
-    X_train = X_train.copy()
-    X_train['target'] = y_train
-    X_test = X_test.copy()
-    X_test['target'] = y_test
+    X_train[dv_name] = y_train
+    X_test[dv_name] = y_test
     
-    # Define the model using Bambi ( 1 | random_effect )
-    model_equation = 'target ~ ' + ' + '.join(X_train.columns[:-1])
+    # Define the model using Bambi
     model = bmb.Model(model_equation, data=X_train)
     if priors_config is not None:
         model.set_priors(priors_config)
     
+    model_args["include_mean"] = True
     # Fit the model using MCMC sampling
     trace = model.fit(**model_args)
     
