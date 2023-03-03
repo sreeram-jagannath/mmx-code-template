@@ -113,7 +113,7 @@ def process_input_priors(pr_cfg_df: pd.DataFrame, data: pd.DataFrame) -> dict:
     return processed_priors
 
 
-def create_model_equation(pr_cfg_df, group_var="", random_intercept=False) -> str:
+def create_model_equation(pr_cfg_df, group_var="", random_intercept=True) -> str:
     """function to create mixed model equation from the user
 
     Args:
