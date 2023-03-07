@@ -489,7 +489,7 @@ def create_adstock(data: pd.DataFrame, date_col: str, half_lives: List, max_memo
 
 def create_lag(data: pd.DataFrame, date_col: str, lags: List,  group_cols: List = None,
                    suffix: str = "", value_cols: List = None) -> pd.DataFrame:
-    """Create Adstock for Columns
+    """Create lags for Columns
 
     Args:
         data (pd.DataFrame): Input Dataframe
